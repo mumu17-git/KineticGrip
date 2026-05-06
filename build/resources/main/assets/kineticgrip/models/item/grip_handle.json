@@ -1,0 +1,6 @@
+{
+  "parent": "kineticgrip:block/grip_handle/item",
+  "textures": {
+    "0": "kineticgrip:block/grip_handle/iron_handle"
+  }
+}

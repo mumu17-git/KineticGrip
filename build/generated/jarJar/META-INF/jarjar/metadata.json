@@ -1,0 +1,16 @@
+{
+  "jars": [
+    {
+      "identifier": {
+        "group": "com.tterrag.registrate",
+        "artifact": "Registrate"
+      },
+      "version": {
+        "range": "[MC1.21,MC1.22)",
+        "artifactVersion": "MC1.21-1.3.0+67"
+      },
+      "path": "META-INF/jarjar/Registrate-MC1.21-1.3.0+67.jar",
+      "isObfuscated": false
+    }
+  ]
+}

@@ -3,31 +3,14 @@ package com.mumu17.kineticgrip.register;
 import com.mumu17.kineticgrip.KineticGrip;
 import com.mumu17.kineticgrip.block.GripHandleBlock;
 import com.mumu17.kineticgrip.block.GripHandleBlockEntity;
-import com.simibubi.create.foundation.data.SharedProperties;
 import com.simibubi.create.foundation.item.ItemDescription;
-import com.tterrag.registrate.Registrate;
-import com.tterrag.registrate.builders.BlockBuilder;
-import com.tterrag.registrate.providers.RegistrateRecipeProvider;
 import com.tterrag.registrate.providers.loot.RegistrateBlockLootTables;
 import com.tterrag.registrate.util.entry.BlockEntry;
-import dev.simulated_team.simulated.content.blocks.portable_engine.PortableEngineBlock;
 import dev.simulated_team.simulated.index.SimBlocks;
-import dev.simulated_team.simulated.index.SimTags;
-import dev.simulated_team.simulated.registrate.simulated_tab.CreativeTabItemTransforms;
 import dev.simulated_team.simulated.service.SimBlockStateService;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.data.recipes.RecipeCategory;
-import net.minecraft.data.recipes.ShapelessRecipeBuilder;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.ItemLike;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.client.model.generators.ItemModelBuilder;
-import net.neoforged.neoforge.common.Tags;
 
 public class ModBlocks {
 

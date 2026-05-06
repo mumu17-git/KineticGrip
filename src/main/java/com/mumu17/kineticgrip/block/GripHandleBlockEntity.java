@@ -1,9 +1,12 @@
 package com.mumu17.kineticgrip.block;
 
+import com.mumu17.kineticgrip.KineticGrip;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.physics.constraint.ConstraintJointAxis;
+import dev.ryanhcode.sable.api.physics.constraint.PhysicsConstraintConfiguration;
 import dev.ryanhcode.sable.api.physics.constraint.PhysicsConstraintHandle;
 import dev.ryanhcode.sable.api.physics.constraint.fixed.FixedConstraintConfiguration;
+import dev.ryanhcode.sable.api.physics.constraint.fixed.FixedConstraintHandle;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
@@ -12,6 +15,7 @@ import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import dev.simulated_team.simulated.content.blocks.handle.HandleBlockEntity;
+import dev.simulated_team.simulated.content.blocks.util.AbstractDirectionalAxisBlock;
 import dev.simulated_team.simulated.service.SimConfigService;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
@@ -122,7 +126,8 @@ public class GripHandleBlockEntity extends HandleBlockEntity {
             this.removeJoint();
             Player player = GripHandleBlockEntity.this.level != null ? GripHandleBlockEntity.this.level.getPlayerByUUID(this.playerId) : null;
             if (player != null) {
-                if (player.onGround() || player.isInWater() || player.getAbilities().flying || player.onClimbable()) {
+                boolean isJumping = (player.getDeltaMovement().y > 0 || player.getDeltaMovement().y < 0) && !player.onGround();
+                if (player.onGround() || isJumping || player.isInWater() || player.getAbilities().flying || player.onClimbable()) {
                     SubLevel standingSubLevel = Sable.HELPER.getTrackingSubLevel(player);
                     if (standingSubLevel != subLevel) {
                         Vector3d constraintGoal = JOMLConversion.toJOML(player.getEyePosition().add(player.getLookAngle().scale(Math.max((double)2.0F, (double)this.scrollDistance))));
@@ -132,34 +137,62 @@ public class GripHandleBlockEntity extends HandleBlockEntity {
 
                         BlockState state = GripHandleBlockEntity.this.getBlockState();
                         Direction facing = state.getValue(DirectionalBlock.FACING);
+                        boolean axisAlongFirst = state.getValue(AbstractDirectionalAxisBlock.AXIS_ALONG_FIRST_COORDINATE);
                         Vector3d forward = new Vector3d(
                                 facing.getStepX(),
                                 facing.getStepY(),
                                 facing.getStepZ()
                         );
+                        Vector3d up = Math.abs(forward.y) > 0.999D
+                                ? new Vector3d(0, 0, 1)
+                                : new Vector3d(0, 1, 0);
                         Quaterniond initialRot = new Quaterniond()
-                                .lookAlong(forward, new Vector3d(0, 1, 0))
+                                .lookAlong(forward, up)
                                 .rotateY(Math.PI);
+                        if (axisAlongFirst) {
+                            // facing方向に応じた回転軸の選択
+                            switch (facing) {
+                                case NORTH, SOUTH ->
+                                    initialRot.rotateZ((Math.PI / 2.0D) * (facing.equals(Direction.NORTH) ? 1 : -1));
+                                case UP, DOWN ->
+                                    initialRot.rotateY(Math.PI / 2.0D * (facing.equals(Direction.UP) ? 1 : -1));
+                            }
+                        } else {
+                            switch (facing) {
+                                case EAST, WEST ->
+                                initialRot.rotateX(Math.PI / 2.0D * (facing.equals(Direction.EAST) ? 1 : -1));
+                            }
+                        }
 
-                        double validRange = player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE).getValue() + (double)2.0F;
-                        double currentDistance = Sable.HELPER.distanceSquaredWithSubLevels(GripHandleBlockEntity.this.level, constraintGoal, constraintPosition);
-                        if (!Mth.equal(-1.0F, this.scrollDistance) && !(currentDistance > validRange * validRange)) {
-                            ServerSubLevelContainer container = SubLevelContainer.getContainer(subLevel.getLevel());
+                        // Y座標の健全性チェックと制限
+                        final double MAX_Y_COORDINATE = 1000.0D;
+                        boolean validConstraintGoal = !Double.isNaN(constraintGoal.y) && !Double.isInfinite(constraintGoal.y) && Math.abs(constraintGoal.y) <= MAX_Y_COORDINATE;
+                        boolean validConstraintPosition = !Double.isNaN(constraintPosition.y) && !Double.isInfinite(constraintPosition.y) && Math.abs(constraintPosition.y) <= MAX_Y_COORDINATE;
 
-                            assert container != null;
+                        if (validConstraintGoal && validConstraintPosition) {
+                            double validRange = player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE).getValue() + (double)2.0F;
+                            double currentDistance = Sable.HELPER.distanceSquaredWithSubLevels(GripHandleBlockEntity.this.level, constraintGoal, constraintPosition);
+                            if (!Mth.equal(-1.0F, this.scrollDistance) && !(currentDistance > validRange * validRange)) {
+                                ServerSubLevelContainer container = SubLevelContainer.getContainer(subLevel.getLevel());
 
-                            SubLevelPhysicsSystem physicsSystem = container.physicsSystem();
+                                assert container != null;
 
-                            this.constraintHandle = physicsSystem.getPipeline().addConstraint((ServerSubLevel)null, subLevel, new FixedConstraintConfiguration(constraintGoal, constraintPosition, new Quaterniond().rotateY(-yawRad).invert().mul(initialRot).rotateY(Math.PI)));
-                            if (this.constraintHandle != null) {
-                                double maxForce = (double) SimConfigService.INSTANCE.server().physics.handleMaxForce.getF();
+                                SubLevelPhysicsSystem physicsSystem = container.physicsSystem();
 
-                                for (ConstraintJointAxis axis : ConstraintJointAxis.LINEAR) {
-                                    this.constraintHandle.setMotor(axis, (double) 0.0F, (double) 240.0F/8, (double) 30.0F, true, maxForce);
-                                }
+                                Quaterniond quaterniond = new Quaterniond().rotateY(-yawRad).invert().mul(initialRot).rotateY(Math.PI);
 
-                                for (ConstraintJointAxis axis : ConstraintJointAxis.ANGULAR) {
-                                    this.constraintHandle.setMotor(axis, (double) 0.0F, (double) 0.0F, (double) 4.5F, true, maxForce);
+                                PhysicsConstraintConfiguration<FixedConstraintHandle> configuration = new FixedConstraintConfiguration(constraintGoal, constraintPosition, quaterniond);
+                                this.constraintHandle = physicsSystem.getPipeline().addConstraint((ServerSubLevel) null, subLevel, configuration);
+                                if (this.constraintHandle != null) {
+                                    double maxForce = (double) SimConfigService.INSTANCE.server().physics.handleMaxForce.getF();
+
+                                    for (ConstraintJointAxis axis : ConstraintJointAxis.LINEAR) {
+                                        this.constraintHandle.setMotor(axis, (double) 0.0F, (double) 240.0F / 8, (double) 30.0F, true, maxForce);
+                                    }
+
+                                    for (ConstraintJointAxis axis : ConstraintJointAxis.ANGULAR) {
+                                        this.constraintHandle.setMotor(axis, (double) 0.0F, (double) 0.0F, (double) 4.5F, true, maxForce);
+                                    }
                                 }
                             }
                         }

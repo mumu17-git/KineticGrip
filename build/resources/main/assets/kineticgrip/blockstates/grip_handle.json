@@ -1,0 +1,52 @@
+{
+  "variants": {
+    "axis_along_first=false,facing=down": {
+      "model": "kineticgrip:block/grip_handle/block_horizontal",
+      "x": 270,
+      "y": 90
+    },
+    "axis_along_first=false,facing=east": {
+      "model": "kineticgrip:block/grip_handle/block_horizontal",
+      "y": 270
+    },
+    "axis_along_first=false,facing=north": {
+      "model": "kineticgrip:block/grip_handle/block_vertical",
+      "y": 180
+    },
+    "axis_along_first=false,facing=south": {
+      "model": "kineticgrip:block/grip_handle/block_vertical"
+    },
+    "axis_along_first=false,facing=up": {
+      "model": "kineticgrip:block/grip_handle/block_horizontal",
+      "x": 90,
+      "y": 90
+    },
+    "axis_along_first=false,facing=west": {
+      "model": "kineticgrip:block/grip_handle/block_horizontal",
+      "y": 90
+    },
+    "axis_along_first=true,facing=down": {
+      "model": "kineticgrip:block/grip_handle/block_horizontal",
+      "x": 270
+    },
+    "axis_along_first=true,facing=east": {
+      "model": "kineticgrip:block/grip_handle/block_vertical",
+      "y": 270
+    },
+    "axis_along_first=true,facing=north": {
+      "model": "kineticgrip:block/grip_handle/block_horizontal",
+      "y": 180
+    },
+    "axis_along_first=true,facing=south": {
+      "model": "kineticgrip:block/grip_handle/block_horizontal"
+    },
+    "axis_along_first=true,facing=up": {
+      "model": "kineticgrip:block/grip_handle/block_horizontal",
+      "x": 90
+    },
+    "axis_along_first=true,facing=west": {
+      "model": "kineticgrip:block/grip_handle/block_vertical",
+      "y": 90
+    }
+  }
+}
