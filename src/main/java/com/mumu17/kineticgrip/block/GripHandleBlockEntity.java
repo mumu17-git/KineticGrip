@@ -210,8 +210,6 @@ public class GripHandleBlockEntity extends HandleBlockEntity {
                                     this.localGoal.set(vector3dc).add(eyePosX, eyePosY, eyePosZ);
                                     this.orientation.transformInverse(this.localGoal);
 
-                                    KineticGrip.LOGGER.debug("vector3d: {}", this.localGoal);
-
                                     // Linear motors: use goal offsets and moderate stiffness/damping
                                     this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_X, this.localGoal.x(), 240.0, 30.0, false, 0.0);
                                     this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_Y, this.localGoal.y(), 240.0, 30.0, false, 0.0);
