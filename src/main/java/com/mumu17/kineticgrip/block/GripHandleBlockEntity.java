@@ -5,8 +5,8 @@ import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.physics.constraint.ConstraintJointAxis;
 import dev.ryanhcode.sable.api.physics.constraint.PhysicsConstraintConfiguration;
 import dev.ryanhcode.sable.api.physics.constraint.PhysicsConstraintHandle;
-import dev.ryanhcode.sable.api.physics.constraint.fixed.FixedConstraintConfiguration;
-import dev.ryanhcode.sable.api.physics.constraint.fixed.FixedConstraintHandle;
+import dev.ryanhcode.sable.api.physics.constraint.free.FreeConstraintConfiguration;
+import dev.ryanhcode.sable.api.physics.constraint.free.FreeConstraintHandle;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
@@ -16,6 +16,7 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import dev.simulated_team.simulated.content.blocks.handle.HandleBlockEntity;
 import dev.simulated_team.simulated.content.blocks.util.AbstractDirectionalAxisBlock;
+import dev.simulated_team.simulated.config.server.physics.SimPhysics;
 import dev.simulated_team.simulated.service.SimConfigService;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
@@ -30,6 +31,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaterniond;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -113,6 +115,8 @@ public class GripHandleBlockEntity extends HandleBlockEntity {
         private static final double CONSTRAINT_STIFFNESS = (double)240.0F;
         private final UUID playerId;
         private float scrollDistance;
+        private final Vector3d localGoal = new Vector3d();
+        private final Quaterniond orientation = new Quaterniond();
         private @Nullable PhysicsConstraintHandle constraintHandle;
 
         public GripHandleConstraint(final UUID playerId, final float scrollDistance, final PhysicsConstraintHandle constraintHandle) {
@@ -153,14 +157,14 @@ public class GripHandleBlockEntity extends HandleBlockEntity {
                             // facing方向に応じた回転軸の選択
                             switch (facing) {
                                 case NORTH, SOUTH ->
-                                    initialRot.rotateZ((Math.PI / 2.0D) * (facing.equals(Direction.NORTH) ? 1 : -1));
+                                        initialRot.rotateZ((Math.PI / 2.0D) * (facing.equals(Direction.NORTH) ? 1 : -1));
                                 case UP, DOWN ->
-                                    initialRot.rotateY(Math.PI / 2.0D * (facing.equals(Direction.UP) ? 1 : -1));
+                                        initialRot.rotateY(Math.PI / 2.0D * (facing.equals(Direction.UP) ? 1 : -1));
                             }
                         } else {
                             switch (facing) {
                                 case EAST, WEST ->
-                                initialRot.rotateX(Math.PI / 2.0D * (facing.equals(Direction.EAST) ? 1 : -1));
+                                        initialRot.rotateX(Math.PI / 2.0D * (facing.equals(Direction.EAST) ? 1 : -1));
                             }
                         }
 
@@ -178,21 +182,40 @@ public class GripHandleBlockEntity extends HandleBlockEntity {
                                 assert container != null;
 
                                 SubLevelPhysicsSystem physicsSystem = container.physicsSystem();
-
                                 Quaterniond quaterniond = new Quaterniond().rotateY(-yawRad).invert().mul(initialRot).rotateY(Math.PI);
-
-                                PhysicsConstraintConfiguration<FixedConstraintHandle> configuration = new FixedConstraintConfiguration(constraintGoal, constraintPosition, quaterniond);
-                                this.constraintHandle = physicsSystem.getPipeline().addConstraint((ServerSubLevel) null, subLevel, configuration);
+                                this.orientation.set(quaterniond);
+                                FreeConstraintConfiguration configuration = new FreeConstraintConfiguration(JOMLConversion.ZERO, constraintPosition, this.orientation);// quaterniond);
+                                this.constraintHandle = physicsSystem.getPipeline().addConstraint(null, subLevel, configuration);
                                 if (this.constraintHandle != null) {
-                                    double maxForce = (double) SimConfigService.INSTANCE.server().physics.handleMaxForce.getF();
+                                    final SimPhysics config = SimConfigService.INSTANCE.server().physics;
 
-                                    for (ConstraintJointAxis axis : ConstraintJointAxis.LINEAR) {
-                                        this.constraintHandle.setMotor(axis, (double) 0.0F, (double) 240.0F / 8, (double) 30.0F, true, maxForce);
-                                    }
+                                    double maxForce = (double) config.handleMaxForce.getF();
 
+                                    // Angular: lock orientation by setting motors with high stiffness/damping
+                                    final double angularStiffness = (double) config.physicsStaffAngularStiffness.getF();
+                                    final double angularDamping = (double) config.physicsStaffAngularDamping.getF();
                                     for (ConstraintJointAxis axis : ConstraintJointAxis.ANGULAR) {
-                                        this.constraintHandle.setMotor(axis, (double) 0.0F, (double) 0.0F, (double) 4.5F, true, maxForce);
+                                        this.constraintHandle.setMotor(axis, 0.0, angularStiffness/3.0, angularDamping, true, maxForce);
                                     }
+
+                                    // Compute the desired local goal in constraint space
+                                    Vector3dc vector3dc = JOMLConversion.toJOML(player.getLookAngle().scale(Math.max((double)2.0F, (double)this.scrollDistance)));
+
+                                    final double partialTick = physicsSystem.getPartialPhysicsTick();
+
+                                    final double eyePosX = Mth.lerp(partialTick, player.xOld, player.getX());
+                                    final double eyePosY = Mth.lerp(partialTick, player.yOld, player.getY()) + player.getEyeHeight();
+                                    final double eyePosZ = Mth.lerp(partialTick, player.zOld, player.getZ());
+
+                                    this.localGoal.set(vector3dc).add(eyePosX, eyePosY, eyePosZ);
+                                    this.orientation.transformInverse(this.localGoal);
+
+                                    KineticGrip.LOGGER.debug("vector3d: {}", this.localGoal);
+
+                                    // Linear motors: use goal offsets and moderate stiffness/damping
+                                    this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_X, this.localGoal.x(), 240.0, 30.0, false, 0.0);
+                                    this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_Y, this.localGoal.y(), 240.0, 30.0, false, 0.0);
+                                    this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_Z, this.localGoal.z(), 240.0, 30.0, false, 0.0);
                                 }
                             }
                         }

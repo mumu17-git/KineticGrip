@@ -24,6 +24,6 @@ C:\\Users\\moonp\\.gradle\\caches\\neoformruntime\\assets
 kineticgrip
 --all
 --output
-C:\\データ\\Minecraft\\Modding\\KineticGrip\\src\\generated\\resources
+C:\\Data\\Minecraft\\Modding\\KineticGrip\\src\\generated\\resources
 --existing
-C:\\データ\\Minecraft\\Modding\\KineticGrip\\src\\main\\resources
+C:\\Data\\Minecraft\\Modding\\KineticGrip\\src\\main\\resources
