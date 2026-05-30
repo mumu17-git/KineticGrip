@@ -153,7 +153,7 @@ public class GripHandleBlockEntity extends HandleBlockEntity {
                         Quaterniond initialRot = new Quaterniond()
                                 .lookAlong(forward, up)
                                 .rotateY(Math.PI);
-                        if (axisAlongFirst) {
+                        if (!axisAlongFirst) {
                             // facing方向に応じた回転軸の選択
                             switch (facing) {
                                 case NORTH, SOUTH ->
@@ -189,13 +189,15 @@ public class GripHandleBlockEntity extends HandleBlockEntity {
                                 if (this.constraintHandle != null) {
                                     final SimPhysics config = SimConfigService.INSTANCE.server().physics;
 
+                                    final double stiffnessConstant = 0.5;
+                                    final double dampingConstant = 3.0;
                                     double maxForce = (double) config.handleMaxForce.getF();
 
                                     // Angular: lock orientation by setting motors with high stiffness/damping
-                                    final double angularStiffness = (double) config.physicsStaffAngularStiffness.getF();
-                                    final double angularDamping = (double) config.physicsStaffAngularDamping.getF();
+                                    final double angularStiffness = (double) config.physicsStaffAngularStiffness.getF()*stiffnessConstant;
+                                    final double angularDamping = (double) config.physicsStaffAngularDamping.getF()*dampingConstant;
                                     for (ConstraintJointAxis axis : ConstraintJointAxis.ANGULAR) {
-                                        this.constraintHandle.setMotor(axis, 0.0, angularStiffness/3.0, angularDamping, true, maxForce);
+                                        this.constraintHandle.setMotor(axis, 0.0, angularStiffness, angularDamping, true, maxForce);
                                     }
 
                                     // Compute the desired local goal in constraint space
@@ -210,10 +212,13 @@ public class GripHandleBlockEntity extends HandleBlockEntity {
                                     this.localGoal.set(vector3dc).add(eyePosX, eyePosY, eyePosZ);
                                     this.orientation.transformInverse(this.localGoal);
 
+                                    final double linearStiffness = (double) config.physicsStaffLinearStiffness.getF()*stiffnessConstant;
+                                    final double linearDamping = (double) config.physicsStaffLinearDamping.getF()*dampingConstant;
+
                                     // Linear motors: use goal offsets and moderate stiffness/damping
-                                    this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_X, this.localGoal.x(), 240.0, 30.0, false, 0.0);
-                                    this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_Y, this.localGoal.y(), 240.0, 30.0, false, 0.0);
-                                    this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_Z, this.localGoal.z(), 240.0, 30.0, false, 0.0);
+                                    this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_X, this.localGoal.x(), linearStiffness, linearDamping, true, maxForce);
+                                    this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_Y, this.localGoal.y(), linearStiffness, linearDamping, true, maxForce);
+                                    this.constraintHandle.setMotor(ConstraintJointAxis.LINEAR_Z, this.localGoal.z(), linearStiffness, linearDamping, true, maxForce);
                                 }
                             }
                         }
