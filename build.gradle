@@ -117,10 +117,10 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-    implementation files("libs/dev.eriksonn.aeronautics.aeronautics-neoforge-1.21.1-1.1.3.jar")
-    implementation files("libs/dev.ryanhcode.offroad.offroad-neoforge-1.21.1-1.1.3.jar")
-    implementation files("libs/dev.simulated_team.simulated.simulated-neoforge-1.21.1-1.1.3.jar")
-    implementation "curse.maven:sable-1312371:7965090"
+    implementation files("libs/dev.eriksonn.aeronautics.aeronautics-neoforge-1.21.1-1.3.0.jar")
+    implementation files("libs/dev.ryanhcode.offroad.offroad-neoforge-1.21.1-1.3.0.jar")
+    implementation files("libs/dev.simulated_team.simulated.simulated-neoforge-1.21.1-1.3.0.jar")
+    implementation "curse.maven:sable-1312371:8263584"
     compileOnly files("libs/sable-companion-common-1.21.1-1.5.0.jar")
     implementation "curse.maven:create-328085:7963363"
     implementation "com.tterrag.registrate:Registrate:MC1.21-1.3.0+67"

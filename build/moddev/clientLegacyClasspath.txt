@@ -1,4 +1,4 @@
-C:\Data\Minecraft\Modding\KineticGrip\build\moddev\artifacts\neoforge-21.1.227-client-extra-aka-minecraft-resources.jar
+C:\Data\Minecraft\Modding\KineticGrip\build\moddev\artifacts\neoforge-21.1.228-client-extra-aka-minecraft-resources.jar
 C:\Users\moonp\.gradle\caches\modules-2\files-2.1\com.electronwill.night-config\core\3.8.3\b442a95f09e349927f5a945ecb594455870fcf4f\core-3.8.3.jar
 C:\Users\moonp\.gradle\caches\modules-2\files-2.1\com.electronwill.night-config\toml\3.8.3\90b2fd6efcb4a7d5b9810cf78f9d824994d717f2\toml-3.8.3.jar
 C:\Users\moonp\.gradle\caches\modules-2\files-2.1\com.github.oshi\oshi-core\6.4.10\b1d8ab82d11d92fd639b56d639f8f46f739dd5fa\oshi-core-6.4.10.jar
